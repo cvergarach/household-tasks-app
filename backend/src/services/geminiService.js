@@ -8,18 +8,31 @@ class GeminiService {
   async distributeTasks(startDate, endDate, persons, tasks) {
     try {
       const prompt = this.buildDistributionPrompt(startDate, endDate, persons, tasks);
-      
+
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
-      
-      // Extraer JSON del texto (eliminar markdown si existe)
-      const jsonText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+      // Extraer JSON del texto de forma más robusta
+      let jsonText = text.trim();
+
+      // Remover bloques de código markdown
+      jsonText = jsonText.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+
+      // Buscar el primer { y el último }
+      const firstBrace = jsonText.indexOf('{');
+      const lastBrace = jsonText.lastIndexOf('}');
+
+      if (firstBrace !== -1 && lastBrace !== -1) {
+        jsonText = jsonText.substring(firstBrace, lastBrace + 1);
+      }
+
       const distribution = JSON.parse(jsonText);
-      
+
       return distribution;
     } catch (error) {
       console.error('Error en distribución con Gemini:', error);
+      console.error('Texto recibido:', error.message);
       throw new Error('Error al generar distribución con IA');
     }
   }
@@ -30,14 +43,14 @@ class GeminiService {
   async analyzeBalance(assignments, persons) {
     try {
       const prompt = this.buildBalanceAnalysisPrompt(assignments, persons);
-      
+
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
-      
+
       const jsonText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       const analysis = JSON.parse(jsonText);
-      
+
       return analysis;
     } catch (error) {
       console.error('Error en análisis de balance:', error);
@@ -51,14 +64,14 @@ class GeminiService {
   async optimizeDistribution(assignments, persons, tasks) {
     try {
       const prompt = this.buildOptimizationPrompt(assignments, persons, tasks);
-      
+
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
-      
+
       const jsonText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       const optimization = JSON.parse(jsonText);
-      
+
       return optimization;
     } catch (error) {
       console.error('Error en optimización:', error);
@@ -71,7 +84,7 @@ class GeminiService {
    */
   buildDistributionPrompt(startDate, endDate, persons, tasks) {
     const dateRange = eachDayOfInterval({ start: new Date(startDate), end: new Date(endDate) });
-    
+
     return `Eres un asistente experto en distribución equitativa de tareas del hogar.
 
 PERSONAS:
