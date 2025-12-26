@@ -137,60 +137,34 @@ class GeminiService {
   buildDistributionPrompt(startDate, endDate, persons, tasks) {
     const dateRange = eachDayOfInterval({ start: new Date(startDate), end: new Date(endDate) });
 
-    return `Eres un asistente experto en distribución equitativa de tareas del hogar.
+    // Simplificar: solo pedir las primeras 2 semanas para reducir complejidad
+    const limitedDays = Math.min(dateRange.length, 14);
 
-PERSONAS:
-${JSON.stringify(persons, null, 2)}
+    return `Distribuye tareas del hogar de forma equitativa.
 
-TAREAS MAESTRAS:
-${JSON.stringify(tasks, null, 2)}
+PERSONAS (${persons.length}):
+${persons.map(p => `- ${p.name} (ID: ${p.id}): ${p.workSchedule ? 'Trabaja L-V' : 'Disponible'}`).join('\n')}
 
-PERÍODO: ${format(new Date(startDate), 'dd/MM/yyyy')} hasta ${format(new Date(endDate), 'dd/MM/yyyy')}
-Total de días: ${dateRange.length}
+TAREAS (${tasks.length}):
+${tasks.slice(0, 20).map(t => `- ${t.name} (ID: ${t.id}): ${t.duration}min, ${t.frequency}`).join('\n')}
+... y ${tasks.length - 20} tareas más
 
-REGLAS CRÍTICAS:
-1. Cada persona debe tener aproximadamente el MISMO TIEMPO TOTAL de tareas por semana (±2 horas máximo de diferencia)
-2. Respetar horarios de trabajo y disponibilidad de cada persona
-3. Tareas de cocina (preparar comidas) deben rotar equitativamente entre todos
-4. Quien cocina NO lava platos después de esa comida
-5. Tareas de dormitorios preferentemente al usuario de ese dormitorio
-6. Tareas de jardín requieren luz del día (horario diurno o fines de semana)
-7. Tareas pesadas (lavandería, compras) distribuir en fines de semana para personas que trabajan
-8. Considerar condiciones especiales (ej: Felipe máximo 15h/semana hasta el 31/12)
+PERÍODO: ${limitedDays} días desde ${format(new Date(startDate), 'dd/MM/yyyy')}
 
-FRECUENCIAS:
-- Tareas "daily": Asignar TODOS los días del período
-- Tareas "weekly": Asignar 1 vez por semana (mismo día cada semana si es posible)
-- Tareas "monthly": Asignar 1 vez por mes (mismo día si es posible)
+REGLAS:
+1. Distribuir equitativamente entre todas las personas
+2. Tareas diarias: asignar cada día
+3. Tareas semanales: asignar 1-2 veces por semana
+4. Tareas mensuales: asignar 1 vez
 
-RETORNA UN JSON con este formato EXACTO:
+FORMATO DE RESPUESTA (JSON puro, sin markdown):
 {
   "assignments": [
-    {
-      "taskId": "uuid-de-tarea",
-      "personId": "uuid-de-persona",
-      "date": "YYYY-MM-DD",
-      "reasoning": "Breve razón de esta asignación"
-    }
-  ],
-  "statistics": {
-    "person-uuid-1": {
-      "totalHoursWeek": 10.5,
-      "totalHoursMonth": 42,
-      "totalHoursPeriod": 126,
-      "tasksPerDay": 3.2
-    }
-  },
-  "balance": {
-    "isBalanced": true,
-    "maxDifference": 1.5,
-    "recommendations": ["Sugerencia 1", "Sugerencia 2"]
-  }
+    {"taskId": "id-tarea", "personId": "id-persona", "date": "2025-12-26"}
+  ]
 }
 
-CRÍTICO: Tu respuesta debe ser ÚNICAMENTE un objeto JSON válido, sin ningún texto antes o después.
-NO incluyas explicaciones, NO uses bloques de código markdown (\`\`\`), SOLO el JSON puro.
-Asegúrate de que todas las comillas estén correctamente cerradas y que no haya comas finales.`;
+IMPORTANTE: Retorna SOLO el objeto JSON, sin texto adicional.`;
   }
 
   /**
