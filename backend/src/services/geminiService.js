@@ -137,7 +137,7 @@ RETORNA UN JSON con este formato EXACTO:
 }
 
 CRÍTICO: Tu respuesta debe ser ÚNICAMENTE un objeto JSON válido, sin ningún texto antes o después.
-NO incluyas explicaciones, NO uses bloques de código markdown (```), SOLO el JSON puro.
+NO incluyas explicaciones, NO uses bloques de código markdown (\`\`\`), SOLO el JSON puro.
 Asegúrate de que todas las comillas estén correctamente cerradas y que no haya comas finales.`;
   }
 
@@ -148,11 +148,11 @@ Asegúrate de que todas las comillas estén correctamente cerradas y que no haya
     return `Analiza el balance de carga de trabajo en las siguientes asignaciones de tareas:
 
     PERSONAS:
-${ JSON.stringify(persons, null, 2) }
+${JSON.stringify(persons, null, 2)}
 
 ASIGNACIONES ACTUALES:
-${ JSON.stringify(assignments.slice(0, 100), null, 2) }
-${ assignments.length > 100 ? `... y ${assignments.length - 100} asignaciones más` : '' }
+${JSON.stringify(assignments.slice(0, 100), null, 2)}
+${assignments.length > 100 ? `... y ${assignments.length - 100} asignaciones más` : ''}
 
     Analiza:
     1. ¿Es equitativo el tiempo asignado a cada persona ?
@@ -184,13 +184,13 @@ ${ assignments.length > 100 ? `... y ${assignments.length - 100} asignaciones m�
     return `Optimiza la distribución actual de tareas manteniendo la estructura base pero mejorando el balance:
 
     PERSONAS:
-${ JSON.stringify(persons, null, 2) }
+${JSON.stringify(persons, null, 2)}
 
     TAREAS:
-${ JSON.stringify(tasks, null, 2) }
+${JSON.stringify(tasks, null, 2)}
 
 ASIGNACIONES ACTUALES:
-${ JSON.stringify(assignments.slice(0, 100), null, 2) }
+${JSON.stringify(assignments.slice(0, 100), null, 2)}
 
 Sugiere cambios específicos para:
     1. Balancear mejor la carga de trabajo
