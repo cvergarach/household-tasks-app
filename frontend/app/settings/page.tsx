@@ -4,12 +4,20 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { Task, Person } from '@/types';
 import { Trash2, Edit, Plus, Mail, Bot, BarChart } from 'lucide-react';
+import PersonModal from './components/PersonModal';
+import TaskModal from './components/TaskModal';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<'tasks' | 'persons' | 'emails' | 'ai'>('tasks');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [persons, setPersons] = useState<Person[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Modal states
+  const [personModalOpen, setPersonModalOpen] = useState(false);
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [editingPerson, setEditingPerson] = useState<Person | null>(null);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   useEffect(() => {
     loadData();
@@ -77,6 +85,70 @@ export default function SettingsPage() {
     }
   };
 
+  // Person handlers
+  const handleOpenPersonModal = (person?: Person) => {
+    setEditingPerson(person || null);
+    setPersonModalOpen(true);
+  };
+
+  const handleSavePerson = async (data: any) => {
+    setLoading(true);
+    try {
+      if (editingPerson) {
+        await api.updatePerson(editingPerson.id, data);
+      } else {
+        await api.createPerson(data);
+      }
+      await loadData();
+      setPersonModalOpen(false);
+      setEditingPerson(null);
+    } catch (error) {
+      console.error('Error saving person:', error);
+      alert('Error al guardar persona');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeletePerson = async (id: string, name: string) => {
+    if (!confirm(`¿Eliminar a "${name}" permanentemente?`)) return;
+    setLoading(true);
+    try {
+      await api.deletePerson(id);
+      await loadData();
+    } catch (error) {
+      console.error('Error deleting person:', error);
+      alert('Error al eliminar persona');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Task handlers
+  const handleOpenTaskModal = (task?: Task) => {
+    setEditingTask(task || null);
+    setTaskModalOpen(true);
+  };
+
+  const handleSaveTask = async (data: any) => {
+    setLoading(true);
+    try {
+      if (editingTask) {
+        await api.updateTask(editingTask.id, data);
+      } else {
+        await api.createTask(data);
+      }
+      await loadData();
+      setTaskModalOpen(false);
+      setEditingTask(null);
+    } catch (error) {
+      console.error('Error saving task:', error);
+      alert('Error al guardar tarea');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-3xl font-bold mb-6">Configuración</h1>
@@ -87,41 +159,37 @@ export default function SettingsPage() {
           <nav className="flex space-x-8 px-6">
             <button
               onClick={() => setActiveTab('tasks')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'tasks'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'tasks'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
             >
               Tareas Maestras
             </button>
             <button
               onClick={() => setActiveTab('persons')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'persons'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'persons'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
             >
               Personas
             </button>
             <button
               onClick={() => setActiveTab('emails')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'emails'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'emails'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
             >
               Notificaciones
             </button>
             <button
               onClick={() => setActiveTab('ai')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'ai'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'ai'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
             >
               IA & Distribución
             </button>
@@ -134,7 +202,10 @@ export default function SettingsPage() {
             <div>
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold">Tareas Maestras ({tasks.length})</h2>
-                <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center">
+                <button
+                  onClick={() => handleOpenTaskModal()}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+                >
                   <Plus className="w-4 h-4 mr-2" />
                   Nueva Tarea
                 </button>
@@ -170,7 +241,10 @@ export default function SettingsPage() {
                           {task.category}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                          <button className="text-blue-600 hover:text-blue-900">
+                          <button
+                            onClick={() => handleOpenTaskModal(task)}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
@@ -191,16 +265,41 @@ export default function SettingsPage() {
           {/* Personas */}
           {activeTab === 'persons' && (
             <div>
-              <h2 className="text-xl font-bold mb-4">Personas ({persons.length})</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">Personas ({persons.length})</h2>
+                <button
+                  onClick={() => handleOpenPersonModal()}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nueva Persona
+                </button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {persons.map((person) => (
                   <div key={person.id} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="font-bold text-lg">{person.name}</h3>
-                      <div
-                        className="w-8 h-8 rounded-full"
-                        style={{ backgroundColor: person.color }}
-                      ></div>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-8 h-8 rounded-full"
+                          style={{ backgroundColor: person.color }}
+                        ></div>
+                        <button
+                          onClick={() => handleOpenPersonModal(person)}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="Editar"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeletePerson(person.id, person.name)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Eliminar"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                     <p className="text-sm text-gray-600">{person.email}</p>
                   </div>
@@ -269,7 +368,7 @@ export default function SettingsPage() {
           {activeTab === 'ai' && (
             <div>
               <h2 className="text-xl font-bold mb-6">🤖 Distribución con Inteligencia Artificial</h2>
-              
+
               <div className="space-y-4">
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
                   <h3 className="font-bold text-lg mb-2 flex items-center">
@@ -320,6 +419,29 @@ export default function SettingsPage() {
           )}
         </div>
       </div>
+
+      {/* Modals */}
+      <PersonModal
+        isOpen={personModalOpen}
+        onClose={() => {
+          setPersonModalOpen(false);
+          setEditingPerson(null);
+        }}
+        onSave={handleSavePerson}
+        person={editingPerson}
+      />
+
+      <TaskModal
+        isOpen={taskModalOpen}
+        onClose={() => {
+          setTaskModalOpen(false);
+          setEditingTask(null);
+        }}
+        onSave={handleSaveTask}
+        task={editingTask}
+        persons={persons}
+        maxTaskNumber={tasks.length > 0 ? Math.max(...tasks.map(t => t.number)) : 0}
+      />
     </div>
   );
 }
