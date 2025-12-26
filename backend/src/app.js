@@ -11,7 +11,23 @@ const app = express();
 
 // Middlewares
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: function (origin, callback) {
+    // Permitir requests sin origin (como Postman) en desarrollo
+    if (!origin) return callback(null, true);
+
+    // Lista de orígenes permitidos
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'https://household-tasks-app.vercel.app',
+      process.env.FRONTEND_URL
+    ].filter(Boolean);
+
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('No permitido por CORS'));
+    }
+  },
   credentials: true
 }));
 app.use(express.json());
