@@ -136,7 +136,9 @@ RETORNA UN JSON con este formato EXACTO:
   }
 }
 
-IMPORTANTE: Retorna SOLO el JSON, sin texto adicional antes o después.`;
+CRÍTICO: Tu respuesta debe ser ÚNICAMENTE un objeto JSON válido, sin ningún texto antes o después.
+NO incluyas explicaciones, NO uses bloques de código markdown (```), SOLO el JSON puro.
+Asegúrate de que todas las comillas estén correctamente cerradas y que no haya comas finales.`;
   }
 
   /**
@@ -145,34 +147,34 @@ IMPORTANTE: Retorna SOLO el JSON, sin texto adicional antes o después.`;
   buildBalanceAnalysisPrompt(assignments, persons) {
     return `Analiza el balance de carga de trabajo en las siguientes asignaciones de tareas:
 
-PERSONAS:
-${JSON.stringify(persons, null, 2)}
+    PERSONAS:
+${ JSON.stringify(persons, null, 2) }
 
 ASIGNACIONES ACTUALES:
-${JSON.stringify(assignments.slice(0, 100), null, 2)}
-${assignments.length > 100 ? `... y ${assignments.length - 100} asignaciones más` : ''}
+${ JSON.stringify(assignments.slice(0, 100), null, 2) }
+${ assignments.length > 100 ? `... y ${assignments.length - 100} asignaciones más` : '' }
 
-Analiza:
-1. ¿Es equitativo el tiempo asignado a cada persona?
-2. ¿Hay personas sobrecargadas o con muy pocas tareas?
-3. ¿Se respetan los horarios y disponibilidades?
-4. ¿La rotación de tareas es justa?
+    Analiza:
+    1. ¿Es equitativo el tiempo asignado a cada persona ?
+      2. ¿Hay personas sobrecargadas o con muy pocas tareas ?
+        3. ¿Se respetan los horarios y disponibilidades ?
+          4. ¿La rotación de tareas es justa ?
 
-RETORNA UN JSON:
-{
-  "isBalanced": boolean,
-  "statistics": {
-    "person-uuid": {
-      "totalHours": number,
-      "averageHoursPerDay": number,
-      "taskCount": number
-    }
-  },
-  "maxDifference": number,
-  "recommendations": ["string"],
-  "issues": ["string"],
-  "score": number (0-100)
-}`;
+            RETORNA UN JSON:
+    {
+      "isBalanced": boolean,
+        "statistics": {
+        "person-uuid": {
+          "totalHours": number,
+            "averageHoursPerDay": number,
+              "taskCount": number
+        }
+      },
+      "maxDifference": number,
+        "recommendations": ["string"],
+          "issues": ["string"],
+            "score": number(0 - 100)
+    } `;
   }
 
   /**
@@ -181,35 +183,35 @@ RETORNA UN JSON:
   buildOptimizationPrompt(assignments, persons, tasks) {
     return `Optimiza la distribución actual de tareas manteniendo la estructura base pero mejorando el balance:
 
-PERSONAS:
-${JSON.stringify(persons, null, 2)}
+    PERSONAS:
+${ JSON.stringify(persons, null, 2) }
 
-TAREAS:
-${JSON.stringify(tasks, null, 2)}
+    TAREAS:
+${ JSON.stringify(tasks, null, 2) }
 
 ASIGNACIONES ACTUALES:
-${JSON.stringify(assignments.slice(0, 100), null, 2)}
+${ JSON.stringify(assignments.slice(0, 100), null, 2) }
 
 Sugiere cambios específicos para:
-1. Balancear mejor la carga de trabajo
-2. Mejorar la rotación de tareas
-3. Optimizar según disponibilidades
+    1. Balancear mejor la carga de trabajo
+    2. Mejorar la rotación de tareas
+    3. Optimizar según disponibilidades
 
 RETORNA UN JSON:
-{
-  "changes": [
     {
-      "assignmentId": "uuid",
-      "from": "person-uuid",
-      "to": "person-uuid",
-      "reason": "string"
-    }
-  ],
-  "expectedImprovement": {
-    "balanceScore": number,
-    "description": "string"
-  }
-}`;
+      "changes": [
+        {
+          "assignmentId": "uuid",
+          "from": "person-uuid",
+          "to": "person-uuid",
+          "reason": "string"
+        }
+      ],
+        "expectedImprovement": {
+        "balanceScore": number,
+          "description": "string"
+      }
+    } `;
   }
 }
 
