@@ -13,6 +13,7 @@ const model = genAI.getGenerativeModel({
     topK: 40,
     topP: 0.95,
     maxOutputTokens: 8192,
+    responseMimeType: "application/json"
   }
 });
 
