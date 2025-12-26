@@ -6,35 +6,69 @@ class GeminiService {
    * Distribuir tareas usando IA de Gemini
    */
   async distributeTasks(startDate, endDate, persons, tasks) {
-    try {
-      const prompt = this.buildDistributionPrompt(startDate, endDate, persons, tasks);
+    const maxRetries = 3;
+    let lastError;
 
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`🤖 Intento ${attempt}/${maxRetries} de distribución con Gemini...`);
 
-      // Extraer JSON del texto de forma más robusta
-      let jsonText = text.trim();
+        const prompt = this.buildDistributionPrompt(startDate, endDate, persons, tasks);
 
-      // Remover bloques de código markdown
-      jsonText = jsonText.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
 
-      // Buscar el primer { y el último }
-      const firstBrace = jsonText.indexOf('{');
-      const lastBrace = jsonText.lastIndexOf('}');
+        console.log(`📝 Respuesta de Gemini (primeros 200 chars): ${text.substring(0, 200)}...`);
 
-      if (firstBrace !== -1 && lastBrace !== -1) {
-        jsonText = jsonText.substring(firstBrace, lastBrace + 1);
+        // Extraer JSON del texto de forma más robusta
+        let jsonText = text.trim();
+
+        // Remover bloques de código markdown
+        jsonText = jsonText.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+
+        // Buscar el primer { y el último }
+        const firstBrace = jsonText.indexOf('{');
+        const lastBrace = jsonText.lastIndexOf('}');
+
+        if (firstBrace !== -1 && lastBrace !== -1) {
+          jsonText = jsonText.substring(firstBrace, lastBrace + 1);
+        }
+
+        // Intentar arreglar JSON común errors
+        jsonText = this.fixCommonJsonErrors(jsonText);
+
+        const distribution = JSON.parse(jsonText);
+
+        console.log(`✅ JSON parseado exitosamente en intento ${attempt}`);
+        return distribution;
+      } catch (error) {
+        lastError = error;
+        console.error(`❌ Error en intento ${attempt}:`, error.message);
+
+        if (attempt < maxRetries) {
+          const waitTime = attempt * 2000; // Esperar más tiempo en cada intento
+          console.log(`⏳ Esperando ${waitTime}ms antes del siguiente intento...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
       }
-
-      const distribution = JSON.parse(jsonText);
-
-      return distribution;
-    } catch (error) {
-      console.error('Error en distribución con Gemini:', error);
-      console.error('Texto recibido:', error.message);
-      throw new Error('Error al generar distribución con IA');
     }
+
+    console.error('Error en distribución con Gemini después de todos los intentos:', lastError);
+    throw new Error(`Error al generar distribución con IA después de ${maxRetries} intentos: ${lastError.message}`);
+  }
+
+  /**
+   * Intentar arreglar errores comunes de JSON
+   */
+  fixCommonJsonErrors(jsonText) {
+    // Remover comas finales antes de } o ]
+    jsonText = jsonText.replace(/,(\s*[}\]])/g, '$1');
+
+    // Asegurar que las comillas sean dobles
+    jsonText = jsonText.replace(/'/g, '"');
+
+    return jsonText;
   }
 
   /**
