@@ -62,11 +62,29 @@ class GeminiService {
    * Intentar arreglar errores comunes de JSON
    */
   fixCommonJsonErrors(jsonText) {
+    console.log(`🔧 Intentando arreglar JSON (longitud: ${jsonText.length})...`);
+
+    // Log del JSON completo para debugging
+    if (jsonText.length < 2000) {
+      console.log('📄 JSON completo:', jsonText);
+    } else {
+      console.log('📄 JSON (primeros 1000 chars):', jsonText.substring(0, 1000));
+      console.log('📄 JSON (últimos 500 chars):', jsonText.substring(jsonText.length - 500));
+    }
+
     // Remover comas finales antes de } o ]
     jsonText = jsonText.replace(/,(\s*[}\]])/g, '$1');
 
     // Asegurar que las comillas sean dobles
     jsonText = jsonText.replace(/'/g, '"');
+
+    // Arreglar saltos de línea dentro de strings
+    jsonText = jsonText.replace(/"\s*\n\s*"/g, '" "');
+
+    // Remover caracteres de control
+    jsonText = jsonText.replace(/[\x00-\x1F\x7F]/g, '');
+
+    console.log('✅ JSON después de arreglos (primeros 500 chars):', jsonText.substring(0, 500));
 
     return jsonText;
   }
