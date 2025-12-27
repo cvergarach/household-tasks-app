@@ -109,12 +109,26 @@ class APIClient {
   }
 
   async redistributeAll(startDate: string, endDate: string) {
+    console.log(`📡 [API] Llamando a ${API_URL}/api/ai/redistribute`);
+    console.log('📤 [API] Datos:', { startDate, endDate });
+
     const res = await fetch(`${API_URL}/api/ai/redistribute`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ startDate, endDate })
     });
-    return res.json();
+
+    console.log('📥 [API] Status:', res.status, res.statusText);
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error('❌ [API] Error response:', errorText);
+      throw new Error(`HTTP ${res.status}: ${errorText}`);
+    }
+
+    const data = await res.json();
+    console.log('✅ [API] Respuesta exitosa:', data);
+    return data;
   }
 
   async analyzeBalance(startDate?: string, endDate?: string) {
