@@ -57,6 +57,15 @@ export default function SettingsPage() {
     }
   };
 
+  const loadModels = async () => {
+    try {
+      const data = await api.getAvailableModels();
+      setAvailableModels(data);
+    } catch (error) {
+      console.error('Error loading models:', error);
+    }
+  };
+
   const handleDeleteTask = async (id: string, name: string) => {
     if (!confirm(`¿Eliminar "${name}" permanentemente?`)) return;
     try {
@@ -73,7 +82,7 @@ export default function SettingsPage() {
     setLoading(true);
     try {
       console.log('📡 [FRONTEND] Llamando a API redistributeAll...');
-      const result = await api.redistributeAll('2025-12-27', '2026-03-31');
+      const result = await api.redistributeAll('2025-12-27', '2026-03-31', selectedModel);
       console.log('✅ [FRONTEND] Respuesta de API:', result);
       alert('¡Distribución completada con IA!');
     } catch (error: any) {
@@ -453,6 +462,39 @@ export default function SettingsPage() {
                     Gemini AI distribuirá todas las tareas equitativamente entre las personas,
                     considerando horarios, disponibilidad y preferencias.
                   </p>
+
+                  {/* Model Selector */}
+                  {availableModels && (
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium mb-2 text-gray-700">
+                        🤖 Modelo de IA
+                      </label>
+                      <select
+                        value={selectedModel}
+                        onChange={(e) => setSelectedModel(e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      >
+                        <optgroup label="🔮 Claude (Anthropic)">
+                          {availableModels.grouped.anthropic.map((m: any) => (
+                            <option key={m.id} value={m.id}>
+                              {m.name} - {m.description}
+                            </option>
+                          ))}
+                        </optgroup>
+                        <optgroup label="✨ Gemini (Google)">
+                          {availableModels.grouped.google.map((m: any) => (
+                            <option key={m.id} value={m.id}>
+                              {m.name} - {m.description}
+                            </option>
+                          ))}
+                        </optgroup>
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Modelo seleccionado: <strong>{availableModels.models.find((m: any) => m.id === selectedModel)?.name}</strong>
+                      </p>
+                    </div>
+                  )}
+
                   <button
                     onClick={handleDistributeWithAI}
                     disabled={loading}
