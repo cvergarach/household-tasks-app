@@ -106,6 +106,36 @@ class ClaudeService {
         // Remover caracteres de control
         jsonText = jsonText.replace(/[\x00-\x1F\x7F]/g, '');
 
+        // Si el JSON está truncado (no termina con }), intentar cerrarlo
+        if (!jsonText.trim().endsWith('}')) {
+            console.log('⚠️ [CLAUDE] JSON parece truncado, intentando cerrar...');
+
+            // Buscar el último objeto completo
+            const lastCompleteObject = jsonText.lastIndexOf('}');
+            if (lastCompleteObject !== -1) {
+                // Truncar hasta el último objeto completo
+                jsonText = jsonText.substring(0, lastCompleteObject + 1);
+
+                // Contar llaves abiertas vs cerradas
+                const openBraces = (jsonText.match(/{/g) || []).length;
+                const closeBraces = (jsonText.match(/}/g) || []).length;
+                const openBrackets = (jsonText.match(/\[/g) || []).length;
+                const closeBrackets = (jsonText.match(/\]/g) || []).length;
+
+                // Cerrar arrays abiertos
+                for (let i = 0; i < (openBrackets - closeBrackets); i++) {
+                    jsonText += ']';
+                }
+
+                // Cerrar objetos abiertos
+                for (let i = 0; i < (openBraces - closeBraces); i++) {
+                    jsonText += '}';
+                }
+
+                console.log('✅ [CLAUDE] JSON cerrado automáticamente');
+            }
+        }
+
         return jsonText;
     }
 
