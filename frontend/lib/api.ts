@@ -154,6 +154,35 @@ class APIClient {
     });
     return res.json();
   }
+
+  // Email Configuration
+  async getEmailConfig() {
+    const res = await fetch(`${API_URL}/api/config/email`);
+    return res.json();
+  }
+
+  async updateEmailConfig(config: any) {
+    const res = await fetch(`${API_URL}/api/config/email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config)
+    });
+    return res.json();
+  }
+
+  async testEmailConfig(config: any) {
+    const res = await fetch(`${API_URL}/api/config/email/test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config)
+    });
+    return res.json();
+  }
+
+  async getEmailPresets() {
+    const res = await fetch(`${API_URL}/api/config/email/presets`);
+    return res.json();
+  }
 }
 
 export const api = new APIClient();

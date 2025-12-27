@@ -1,4 +1,4 @@
-const transporter = require('../config/email');
+const { getTransporter, getCurrentConfig } = require('../config/email');
 const { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } = require('date-fns');
 const { es } = require('date-fns/locale');
 const Assignment = require('../models/Assignment');
@@ -33,8 +33,13 @@ class EmailService {
       const totalMinutes = assignments.reduce((sum, a) => sum + (a.task?.duration || 0), 0);
       const html = this.generateDailyEmailHTML(person, date, assignments, totalMinutes);
 
+      const transporter = await getTransporter();
+      if (!transporter) {
+        throw new Error('Email no configurado');
+      }
+      const config = getCurrentConfig();
       await transporter.sendMail({
-        from: process.env.EMAIL_FROM,
+        from: config.from,
         to: person.email,
         subject: `🏠 Tus tareas de hoy - ${format(date, 'dd/MM/yyyy', { locale: es })}`,
         html
@@ -98,8 +103,13 @@ class EmailService {
 
       const html = this.generateWeeklyEmailHTML(person, weekStartDate, weekEnd, assignments);
 
+      const transporter = await getTransporter();
+      if (!transporter) {
+        throw new Error('Email no configurado');
+      }
+      const config = getCurrentConfig();
       await transporter.sendMail({
-        from: process.env.EMAIL_FROM,
+        from: config.from,
         to: person.email,
         subject: `📅 Tus tareas de la semana - ${format(weekStartDate, 'dd/MM')} a ${format(weekEnd, 'dd/MM/yyyy')}`,
         html
@@ -164,8 +174,13 @@ class EmailService {
 
       const html = this.generateMonthlyEmailHTML(person, monthStart, assignments);
 
+      const transporter = await getTransporter();
+      if (!transporter) {
+        throw new Error('Email no configurado');
+      }
+      const config = getCurrentConfig();
       await transporter.sendMail({
-        from: process.env.EMAIL_FROM,
+        from: config.from,
         to: person.email,
         subject: `📆 Tus tareas del mes - ${format(monthStart, 'MMMM yyyy', { locale: es })}`,
         html
@@ -282,7 +297,7 @@ class EmailService {
       const dayTasks = byDay[day];
       const dayTotal = dayTasks.reduce((sum, a) => sum + a.task.duration, 0);
       const taskItems = dayTasks.map(a => `<li>${a.task.name} (${a.task.duration} min)</li>`).join('');
-      
+
       return `
         <div style="margin-bottom: 20px; background: white; padding: 15px; border-left: 4px solid ${person.color};">
           <h3>${format(new Date(day), "EEEE dd/MM", { locale: es })}</h3>
@@ -417,8 +432,13 @@ class EmailService {
 </html>
       `;
 
+      const transporter = await getTransporter();
+      if (!transporter) {
+        throw new Error('Email no configurado');
+      }
+      const config = getCurrentConfig();
       await transporter.sendMail({
-        from: process.env.EMAIL_FROM,
+        from: config.from,
         to: email,
         subject: '✅ Email de Prueba - Tareas del Hogar',
         html

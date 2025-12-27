@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { Task, Person } from '@/types';
-import { Trash2, Edit, Plus, Mail, Bot, BarChart } from 'lucide-react';
+import { Trash2, Edit, Plus, Mail, Bot, BarChart, Settings } from 'lucide-react';
 import PersonModal from './components/PersonModal';
 import TaskModal from './components/TaskModal';
+import EmailConfigModal from './components/EmailConfigModal';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<'tasks' | 'persons' | 'emails' | 'ai'>('tasks');
@@ -16,11 +17,14 @@ export default function SettingsPage() {
   // Modal states
   const [personModalOpen, setPersonModalOpen] = useState(false);
   const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [emailConfigModalOpen, setEmailConfigModalOpen] = useState(false);
   const [editingPerson, setEditingPerson] = useState<Person | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [emailConfigStatus, setEmailConfigStatus] = useState<{ configured: boolean; source?: string }>({ configured: false });
 
   useEffect(() => {
     loadData();
+    loadEmailConfig();
   }, []);
 
   const loadData = async () => {
@@ -33,6 +37,18 @@ export default function SettingsPage() {
       setPersons(personsData);
     } catch (error) {
       console.error('Error loading data:', error);
+    }
+  };
+
+  const loadEmailConfig = async () => {
+    try {
+      const config = await api.getEmailConfig();
+      setEmailConfigStatus({
+        configured: !!(config.config?.host && config.config?.user),
+        source: config.source
+      });
+    } catch (error) {
+      console.error('Error loading email config:', error);
     }
   };
 
@@ -144,6 +160,20 @@ export default function SettingsPage() {
     } catch (error) {
       console.error('Error saving task:', error);
       alert('Error al guardar tarea');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveEmailConfig = async (config: any) => {
+    setLoading(true);
+    try {
+      await api.updateEmailConfig(config);
+      await loadEmailConfig();
+      alert('Configuración de email guardada correctamente');
+    } catch (error) {
+      console.error('Error saving email config:', error);
+      alert('Error al guardar configuración de email');
     } finally {
       setLoading(false);
     }
@@ -311,7 +341,41 @@ export default function SettingsPage() {
           {/* Emails */}
           {activeTab === 'emails' && (
             <div>
-              <h2 className="text-xl font-bold mb-4">Configuración de Notificaciones</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">Configuración de Notificaciones</h2>
+                <button
+                  onClick={() => setEmailConfigModalOpen(true)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Configurar Email
+                </button>
+              </div>
+
+              {/* Email Status */}
+              <div className="mb-6 p-4 rounded-lg border ${
+                emailConfigStatus.configured ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'
+              }">
+                <div className="flex items-center">
+                  {emailConfigStatus.configured ? (
+                    <>
+                      <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                      <span className="text-sm font-medium text-green-800">
+                        Email configurado ({emailConfigStatus.source === 'database' ? 'desde la app' : 'desde variables de entorno'})
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
+                      <span className="text-sm font-medium text-yellow-800">
+                        Email no configurado - Haz clic en "Configurar Email" para empezar
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <h2 className="text-xl font-bold mb-4">Notificaciones por Persona</h2>
               <div className="space-y-4">
                 {persons.map((person) => (
                   <div key={person.id} className="border rounded-lg p-4">
@@ -441,6 +505,12 @@ export default function SettingsPage() {
         task={editingTask}
         persons={persons}
         maxTaskNumber={tasks.length > 0 ? Math.max(...tasks.map(t => t.number)) : 0}
+      />
+
+      <EmailConfigModal
+        isOpen={emailConfigModalOpen}
+        onClose={() => setEmailConfigModalOpen(false)}
+        onSave={handleSaveEmailConfig}
       />
     </div>
   );

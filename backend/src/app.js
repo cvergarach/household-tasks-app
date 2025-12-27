@@ -5,6 +5,7 @@ const taskRoutes = require('./routes/tasks');
 const assignmentRoutes = require('./routes/assignments');
 const aiRoutes = require('./routes/ai');
 const emailRoutes = require('./routes/emails');
+const configRoutes = require('./routes/config');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -52,6 +53,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/emails', emailRoutes);
+app.use('/api/config', configRoutes);
 
 // Ruta 404
 app.use((req, res) => {
