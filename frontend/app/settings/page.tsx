@@ -71,7 +71,7 @@ export default function SettingsPage() {
       const result = await api.redistributeAll('2025-12-27', '2026-03-31');
       console.log('✅ [FRONTEND] Respuesta de API:', result);
       alert('¡Distribución completada con IA!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ [FRONTEND] Error distributing:', error);
       console.error('❌ [FRONTEND] Error details:', error.response?.data || error.message);
       alert(`Error al distribuir tareas: ${error.response?.data?.error || error.message}`);
