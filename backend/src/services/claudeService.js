@@ -144,33 +144,43 @@ class ClaudeService {
      */
     buildDistributionPrompt(startDate, endDate, persons, tasks) {
         const dateRange = eachDayOfInterval({ start: new Date(startDate), end: new Date(endDate) });
-        const limitedDays = Math.min(dateRange.length, 14);
+        // Intentar procesar hasta 31 días si es posible, pero advertir al LLM
+        const limitedDays = Math.min(dateRange.length, 31);
+        const formattedStartDate = format(new Date(startDate), 'yyyy-MM-dd');
 
-        return `Distribuye tareas del hogar de forma equitativa.
+        return `Actúa como un experto en organización del hogar. Tu tarea es distribuir las tareas domésticas de forma equitativa y lógica.
 
 PERSONAS (${persons.length}):
-${persons.map(p => `- ${p.name} (ID: ${p.id}): ${p.workSchedule ? 'Trabaja L-V' : 'Disponible'}`).join('\n')}
+${persons.map(p => `- ${p.name} (ID: ${p.id}): ${p.workSchedule ? 'Trabaja Jornada Completa L-V (menos tiempo disponible)' : 'Disponibilidad completa'}`).join('\n')}
 
-TAREAS (${tasks.length}):
-${tasks.slice(0, 20).map(t => `- ${t.name} (ID: ${t.id}): ${t.duration}min, ${t.frequency}`).join('\n')}
-${tasks.length > 20 ? `... y ${tasks.length - 20} tareas más` : ''}
+TAREAS ACTIVAS (${tasks.length}):
+${tasks.map(t => `- ${t.name} (ID: ${t.id}): ${t.duration} min, Frecuencia: ${t.frequency}`).join('\n')}
 
-PERÍODO: ${limitedDays} días desde ${format(new Date(startDate), 'dd/MM/yyyy')}
+PERÍODO A PLANIFICAR:
+Desde: ${formattedStartDate}
+Hasta: ${format(addDays(new Date(startDate), limitedDays - 1), 'yyyy-MM-dd')} (${limitedDays} días en total)
 
-REGLAS:
-1. Distribuir equitativamente entre todas las personas
-2. Tareas diarias: asignar cada día
-3. Tareas semanales: asignar 1-2 veces por semana
-4. Tareas mensuales: asignar 1 vez
+REGLAS CRÍTICAS:
+1. BALANCE: El tiempo total semanal debe ser similar para todas las personas.
+2. PRIORIDAD: Las tareas diarias son obligatorias cada día.
+3. FRECUENCIA: 
+   - 'daily': Asignar TODOS los días del periodo.
+   - 'weekly': Asignar 1-2 veces por semana (separadas por 3-4 días).
+   - 'monthly': Asignar 1 vez en el periodo.
+4. FORMATO DE FECHA: Usa estrictamente YYYY-MM-DD.
+5. NO REPETIR: No asignes la misma tarea a la misma persona el mismo día.
 
-FORMATO DE RESPUESTA (JSON puro, sin markdown):
+FORMATO DE RESPUESTA (JSON PURO):
 {
   "assignments": [
-    {"taskId": "id-tarea", "personId": "id-persona", "date": "2025-12-26"}
+    {"taskId": "${tasks[0]?.id || 'uuid'}", "personId": "${persons[0]?.id || 'uuid'}", "date": "${formattedStartDate}"}
   ]
 }
 
-IMPORTANTE: Retorna SOLO el objeto JSON, sin texto adicional.`;
+IMPORTANTE: 
+- Genera tantas asignaciones como sea posible para cubrir el período.
+- Retorna ÚNICAMENTE el JSON. Sin introducciones ni explicaciones.
+- Si el periodo es muy largo, prioriza completar los primeros días perfectamente.`;
     }
 }
 
