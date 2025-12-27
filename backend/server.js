@@ -12,6 +12,15 @@ async function startServer() {
     await sequelize.authenticate();
     console.log('✅ Conexión a la base de datos establecida');
 
+    // Asegurar que la tabla EmailConfig exista
+    try {
+      const EmailConfig = require('./src/models/EmailConfig');
+      await EmailConfig.sync({ alter: true });
+      console.log('✅ Tabla email_config verificada/creada');
+    } catch (error) {
+      console.log('⚠️  No se pudo crear tabla email_config:', error.message);
+    }
+
     // Sincronizar modelos (crear tablas si no existen)
     await sequelize.sync({ alter: true });
     console.log('✅ Modelos sincronizados con la base de datos');
