@@ -10,24 +10,29 @@ exports.getConfig = async (req, res) => {
     try {
         const EmailConfig = getEmailConfigModel();
         // Try to get from database first
-        const dbConfig = await EmailConfig.findOne({
-            where: { enabled: true },
-            order: [['updatedAt', 'DESC']]
-        });
-
-        if (dbConfig) {
-            return res.json({
-                source: 'database',
-                config: {
-                    host: dbConfig.host,
-                    port: dbConfig.port,
-                    secure: dbConfig.secure,
-                    user: dbConfig.user,
-                    from: dbConfig.from,
-                    password: dbConfig.password ? '********' : null,
-                    enabled: dbConfig.enabled
-                }
+        try {
+            const dbConfig = await EmailConfig.findOne({
+                where: { enabled: true },
+                order: [['updatedAt', 'DESC']]
             });
+
+            if (dbConfig) {
+                return res.json({
+                    source: 'database',
+                    config: {
+                        host: dbConfig.host,
+                        port: dbConfig.port,
+                        secure: dbConfig.secure,
+                        user: dbConfig.user,
+                        from: dbConfig.from,
+                        password: dbConfig.password ? '********' : null,
+                        enabled: dbConfig.enabled
+                    }
+                });
+            }
+        } catch (dbError) {
+            // If table doesn't exist or any DB error, fall back to env vars
+            console.log('Database config not available, using environment variables');
         }
 
         // Fall back to environment variables
@@ -55,14 +60,20 @@ exports.updateConfig = async (req, res) => {
         }
 
         const EmailConfig = getEmailConfigModel();
-        // Save to database
-        const [config, created] = await EmailConfig.findOrCreate({
-            where: { enabled: true },
-            defaults: { host, port, secure, user, password, from: from || user, enabled: enabled !== false }
-        });
 
-        if (!created) {
-            await config.update({ host, port, secure, user, password, from: from || user, enabled: enabled !== false });
+        try {
+            // Save to database
+            const [config, created] = await EmailConfig.findOrCreate({
+                where: { enabled: true },
+                defaults: { host, port, secure, user, password, from: from || user, enabled: enabled !== false }
+            });
+
+            if (!created) {
+                await config.update({ host, port, secure, user, password, from: from || user, enabled: enabled !== false });
+            }
+        } catch (dbError) {
+            // If table doesn't exist, that's okay - we'll just update the transporter
+            console.log('Could not save to database, but will update transporter:', dbError.message);
         }
 
         // Update the transporter with new configuration
