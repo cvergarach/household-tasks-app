@@ -23,7 +23,7 @@ const AI_MODELS = {
         id: 'claude-sonnet-3.5',
         name: 'Claude Sonnet 3.5',
         provider: 'anthropic',
-        apiModel: 'claude-3-5-sonnet-20241022',
+        apiModel: 'claude-3-5-sonnet-20240620',
         description: 'Equilibrio entre velocidad y calidad',
         capabilities: ['balanced', 'versatile'],
         costTier: 'medium'
