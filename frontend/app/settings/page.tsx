@@ -82,7 +82,12 @@ export default function SettingsPage() {
     setLoading(true);
     try {
       console.log('📡 [FRONTEND] Llamando a API redistributeAll...');
-      const result = await api.redistributeAll('2025-12-27', '2026-03-31', selectedModel);
+      const today = new Date().toISOString().split('T')[0];
+      const threeMonthsLater = new Date();
+      threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
+      const endDate = threeMonthsLater.toISOString().split('T')[0];
+
+      const result = await api.redistributeAll(today, endDate, selectedModel);
       console.log('✅ [FRONTEND] Respuesta de API:', result);
       alert('¡Distribución completada con IA!');
     } catch (error: any) {
@@ -372,9 +377,8 @@ export default function SettingsPage() {
               </div>
 
               {/* Email Status */}
-              <div className="mb-6 p-4 rounded-lg border ${
-                emailConfigStatus.configured ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'
-              }">
+              <div className={`mb-6 p-4 rounded-lg border ${emailConfigStatus.configured ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'
+                }`}>
                 <div className="flex items-center">
                   {emailConfigStatus.configured ? (
                     <>

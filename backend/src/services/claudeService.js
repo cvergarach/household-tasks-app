@@ -144,8 +144,8 @@ class ClaudeService {
      */
     buildDistributionPrompt(startDate, endDate, persons, tasks) {
         const dateRange = eachDayOfInterval({ start: new Date(startDate), end: new Date(endDate) });
-        // Intentar procesar hasta 31 días si es posible, pero advertir al LLM
-        const limitedDays = Math.min(dateRange.length, 31);
+        // Limitar a 7 días para asegurar que la respuesta quepa en los tokens de salida (especialmente con muchas tareas)
+        const limitedDays = Math.min(dateRange.length, 7);
         const formattedStartDate = format(new Date(startDate), 'yyyy-MM-dd');
 
         return `Actúa como un experto en organización del hogar. Tu tarea es distribuir las tareas domésticas de forma equitativa y lógica.

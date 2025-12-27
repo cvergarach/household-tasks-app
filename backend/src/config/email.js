@@ -32,8 +32,37 @@ function getEnvConfig() {
 // Initialize transporter with config
 async function initializeTransporter(config = null) {
   try {
-    // Use provided config or fall back to environment variables
-    const emailConfig = config || getEnvConfig();
+    let emailConfig = config;
+
+    // If no config provided, try to get from database first
+    if (!emailConfig) {
+      try {
+        const EmailConfig = require('../models/EmailConfig');
+        const dbConfig = await EmailConfig.findOne({
+          where: { enabled: true },
+          order: [['updatedAt', 'DESC']]
+        });
+
+        if (dbConfig) {
+          console.log('📧 Usando configuración de email desde la base de datos');
+          emailConfig = {
+            host: dbConfig.host,
+            port: dbConfig.port,
+            secure: dbConfig.secure,
+            user: dbConfig.user,
+            password: dbConfig.password,
+            from: dbConfig.from || dbConfig.user
+          };
+        }
+      } catch (dbError) {
+        console.log('ℹ️ No se pudo cargar configuración de DB, usando variables de entorno');
+      }
+    }
+
+    // Use environment variables if still no config
+    if (!emailConfig) {
+      emailConfig = getEnvConfig();
+    }
 
     // Check if we have minimum required config
     if (!emailConfig.host || !emailConfig.user || !emailConfig.password) {
