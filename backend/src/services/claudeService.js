@@ -41,7 +41,7 @@ class ClaudeService {
 
                 const message = await this.client.messages.create({
                     model: modelId,
-                    max_tokens: 4096,
+                    max_tokens: 8192,
                     messages: [{
                         role: 'user',
                         content: prompt
