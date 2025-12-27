@@ -5,7 +5,7 @@ const AI_MODELS = {
         id: 'claude-sonnet-4.5',
         name: 'Claude Sonnet 4.5',
         provider: 'anthropic',
-        apiModel: 'claude-sonnet-4-20250514',
+        apiModel: 'claude-sonnet-4-5-20250929',
         description: 'El modelo más inteligente, ideal para tareas complejas',
         capabilities: ['complex-reasoning', 'multi-step', 'analysis'],
         costTier: 'high'
@@ -14,7 +14,7 @@ const AI_MODELS = {
         id: 'claude-haiku-4.5',
         name: 'Claude Haiku 4.5',
         provider: 'anthropic',
-        apiModel: 'claude-haiku-4-20250514',
+        apiModel: 'claude-haiku-4-5-20251001',
         description: 'Rápido y eficiente para tareas simples',
         capabilities: ['fast', 'efficient', 'simple-tasks'],
         costTier: 'low'
