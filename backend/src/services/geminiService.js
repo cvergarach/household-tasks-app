@@ -140,8 +140,15 @@ class GeminiService {
    */
   buildDistributionPrompt(startDate, endDate, persons, tasks) {
     const dateRange = eachDayOfInterval({ start: new Date(startDate), end: new Date(endDate) });
-    // Limitar a 7 días para asegurar que la respuesta quepa en los tokens de salida
-    const limitedDays = Math.min(dateRange.length, 7);
+
+    // ADAPTIVE RANGE: Para muchas tareas, reducir drásticamente los días para evitar truncamiento
+    const taskCount = tasks.length;
+    let maxDays = 5;
+    if (taskCount > 30) maxDays = 3;
+    if (taskCount > 50) maxDays = 2;
+    if (taskCount > 80) maxDays = 1; // 82 tareas solo caben en 1 día por respuesta de la IA
+
+    const limitedDays = Math.min(dateRange.length, maxDays);
     const formattedStartDate = format(new Date(startDate), 'yyyy-MM-dd');
 
     return `Actúa como un experto en organización del hogar. Tu tarea es distribuir las tareas domésticas de forma equitativa y lógica.

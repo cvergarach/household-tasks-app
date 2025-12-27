@@ -89,52 +89,45 @@ class ClaudeService {
     }
 
     /**
-     * Arreglar errores comunes de JSON
+     * Arreglar errores comunes de JSON y manejar truncamiento
      */
     fixCommonJsonErrors(jsonText) {
-        console.log(`🔧 [CLAUDE] Arreglando JSON (longitud: ${jsonText.length})...`);
-
-        // Remover comas finales
-        jsonText = jsonText.replace(/,(\s*[}\]])/g, '$1');
-
-        // Asegurar comillas dobles
-        jsonText = jsonText.replace(/'/g, '"');
-
-        // Arreglar saltos de línea
-        jsonText = jsonText.replace(/"\s*\n\s*"/g, '" "');
-
-        // Remover caracteres de control
-        jsonText = jsonText.replace(/[\x00-\x1F\x7F]/g, '');
+        console.log(`🔧 [CLAUDE] Analizando JSON (longitud: ${jsonText.length})...`);
 
         // Si el JSON está truncado (no termina con }), intentar cerrarlo
         if (!jsonText.trim().endsWith('}')) {
-            console.log('⚠️ [CLAUDE] JSON parece truncado, intentando cerrar...');
+            console.log('⚠️ [CLAUDE] JSON parece truncado, intentando recuperar...');
 
-            // Buscar el último objeto completo
-            const lastCompleteObject = jsonText.lastIndexOf('}');
-            if (lastCompleteObject !== -1) {
-                // Truncar hasta el último objeto completo
-                jsonText = jsonText.substring(0, lastCompleteObject + 1);
+            // 1. Encontrar el último objeto completo ( termina con } )
+            // Intentamos encontrar el último } que esté seguido de un espacio, coma, o final de linea
+            // para evitar encontrar un } que sea parte de un string.
+            let lastClosingBrace = jsonText.lastIndexOf('}');
 
-                // Contar llaves abiertas vs cerradas
+            if (lastClosingBrace !== -1) {
+                // Truncamos justo después del último objeto completo
+                jsonText = jsonText.substring(0, lastClosingBrace + 1);
+
+                // Si justo antes había una coma, la quitamos para que el array sea válido al cerrarlo
+                jsonText = jsonText.replace(/,\s*$/, '');
+
+                // Contar balance de estructuras
+                const openBracks = (jsonText.match(/\[/g) || []).length;
+                const closeBracks = (jsonText.match(/\]/g) || []).length;
                 const openBraces = (jsonText.match(/{/g) || []).length;
                 const closeBraces = (jsonText.match(/}/g) || []).length;
-                const openBrackets = (jsonText.match(/\[/g) || []).length;
-                const closeBrackets = (jsonText.match(/\]/g) || []).length;
 
-                // Cerrar arrays abiertos
-                for (let i = 0; i < (openBrackets - closeBrackets); i++) {
-                    jsonText += ']';
-                }
+                // Cerrar en orden inverso
+                if (openBracks > closeBracks) jsonText += ']';
+                if (openBraces > closeBraces) jsonText += '}';
 
-                // Cerrar objetos abiertos
-                for (let i = 0; i < (openBraces - closeBraces); i++) {
-                    jsonText += '}';
-                }
-
-                console.log('✅ [CLAUDE] JSON cerrado automáticamente');
+                console.log('✅ [CLAUDE] JSON cerrado/reparado exitosamente');
             }
         }
+
+        // Limpieza estándar después de reparar estructura
+        jsonText = jsonText.replace(/,(\s*[}\]])/g, '$1'); // Remover comas finales
+        jsonText = jsonText.replace(/'/g, '"');            // Asegurar comillas dobles
+        jsonText = jsonText.replace(/[\x00-\x1F\x7F]/g, ''); // Remover caracteres de control invisibles
 
         return jsonText;
     }
@@ -144,8 +137,15 @@ class ClaudeService {
      */
     buildDistributionPrompt(startDate, endDate, persons, tasks) {
         const dateRange = eachDayOfInterval({ start: new Date(startDate), end: new Date(endDate) });
-        // Limitar a 7 días para asegurar que la respuesta quepa en los tokens de salida (especialmente con muchas tareas)
-        const limitedDays = Math.min(dateRange.length, 7);
+
+        // ADAPTIVE RANGE: Para muchas tareas, reducir drásticamente los días para evitar truncamiento
+        const taskCount = tasks.length;
+        let maxDays = 5;
+        if (taskCount > 30) maxDays = 3;
+        if (taskCount > 50) maxDays = 2;
+        if (taskCount > 80) maxDays = 1; // 82 tareas solo caben en 1 día por respuesta de la IA
+
+        const limitedDays = Math.min(dateRange.length, maxDays);
         const formattedStartDate = format(new Date(startDate), 'yyyy-MM-dd');
 
         return `Actúa como un experto en organización del hogar. Tu tarea es distribuir las tareas domésticas de forma equitativa y lógica.
