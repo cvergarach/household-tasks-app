@@ -102,44 +102,77 @@ exports.redistribute = async (req, res) => {
       return res.status(400).json({ error: 'No hay tareas activas' });
     }
 
-    // Route to appropriate service based on provider
-    let distribution;
-    if (modelConfig.provider === 'anthropic') {
-      console.log('🤖 [REDISTRIBUTE] Llamando a Claude...');
-      distribution = await claudeService.distributeTasks(
-        startDate,
-        endDate,
-        persons,
-        tasks,
-        modelConfig.apiModel
-      );
-    } else {
-      console.log('🤖 [REDISTRIBUTE] Llamando a Gemini...');
-      distribution = await geminiService.distributeTasks(
-        startDate,
-        endDate,
-        persons,
-        tasks,
-        modelConfig.apiModel
-      );
+    const { addDays, format, isAfter } = require('date-fns');
+
+    // Determinamos el tamaño del chunk según la cantidad de tareas
+    const taskCount = tasks.length;
+    let daysPerChunk = 7;
+    if (taskCount > 30) daysPerChunk = 3;
+    if (taskCount > 50) daysPerChunk = 2;
+    if (taskCount > 80) daysPerChunk = 1; // Para 82 tareas, 1 día por chunk es lo más seguro
+
+    console.log(`🔄 [REDISTRIBUTE] Iniciando modo multi-chunk (${daysPerChunk} días por vez)...`);
+
+    let currentStart = new Date(startDate);
+    const finalEnd = new Date(endDate);
+    let totalAssignmentsCreated = 0;
+    let allDistributions = [];
+
+    while (!isAfter(currentStart, finalEnd)) {
+      const chunkEndCandidate = addDays(currentStart, daysPerChunk - 1);
+      const currentChunkEnd = isAfter(chunkEndCandidate, finalEnd) ? finalEnd : chunkEndCandidate;
+
+      const formattedStart = format(currentStart, 'yyyy-MM-dd');
+      const formattedEnd = format(currentChunkEnd, 'yyyy-MM-dd');
+
+      console.log(`📅 [REDISTRIBUTE] Procesando chunk: ${formattedStart} al ${formattedEnd}`);
+
+      // Generar distribución para este chunk
+      let chunkDistribution;
+      if (modelConfig.provider === 'anthropic') {
+        chunkDistribution = await claudeService.distributeTasks(
+          formattedStart,
+          formattedEnd,
+          persons,
+          tasks,
+          modelConfig.apiModel
+        );
+      } else {
+        chunkDistribution = await geminiService.distributeTasks(
+          formattedStart,
+          formattedEnd,
+          persons,
+          tasks,
+          modelConfig.apiModel
+        );
+      }
+
+      if (chunkDistribution && chunkDistribution.assignments) {
+        console.log(`✅ [REDISTRIBUTE] Chunk completado con ${chunkDistribution.assignments.length} asignaciones`);
+
+        // Guardar las asignaciones de este chunk inmediatamente
+        const created = await distributionService.generateAssignments(
+          chunkDistribution,
+          formattedStart,
+          formattedEnd
+        );
+
+        totalAssignmentsCreated += created.length;
+        allDistributions.push(chunkDistribution);
+      }
+
+      // Avanzar al siguiente día después del fin del chunk
+      currentStart = addDays(currentChunkEnd, 1);
     }
-    console.log(`✅ [REDISTRIBUTE] Distribución generada con ${distribution.assignments?.length || 0} asignaciones`);
 
-    console.log('💾 [REDISTRIBUTE] Guardando asignaciones en BD...');
-    const assignments = await distributionService.generateAssignments(
-      distribution,
-      startDate,
-      endDate
-    );
-    console.log(`✅ [REDISTRIBUTE] ${assignments.length} asignaciones creadas en BD`);
+    console.log(`🎉 [REDISTRIBUTE] Redistribución completa. Total creadas: ${totalAssignmentsCreated}`);
 
-    console.log('🎉 [REDISTRIBUTE] Redistribución completada exitosamente');
     res.json({
-      message: 'Redistribución completada',
+      message: 'Redistribución completada exitosamente para todo el período',
       model: modelConfig.name,
       provider: modelConfig.provider,
-      distribution,
-      assignmentsCreated: assignments.length
+      totalAssignmentsCreated,
+      chunksProcessed: allDistributions.length
     });
   } catch (error) {
     console.error('❌ [REDISTRIBUTE] Error en redistribución:', error);

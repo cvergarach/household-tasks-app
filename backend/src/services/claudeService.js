@@ -136,17 +136,8 @@ class ClaudeService {
      * Construir prompt para distribución
      */
     buildDistributionPrompt(startDate, endDate, persons, tasks) {
-        const dateRange = eachDayOfInterval({ start: new Date(startDate), end: new Date(endDate) });
-
-        // ADAPTIVE RANGE: Para muchas tareas, reducir drásticamente los días para evitar truncamiento
-        const taskCount = tasks.length;
-        let maxDays = 5;
-        if (taskCount > 30) maxDays = 3;
-        if (taskCount > 50) maxDays = 2;
-        if (taskCount > 80) maxDays = 1; // 82 tareas solo caben en 1 día por respuesta de la IA
-
-        const limitedDays = Math.min(dateRange.length, maxDays);
         const formattedStartDate = format(new Date(startDate), 'yyyy-MM-dd');
+        const formattedEndDate = format(new Date(endDate), 'yyyy-MM-dd');
 
         return `Actúa como un experto en organización del hogar. Tu tarea es distribuir las tareas domésticas de forma equitativa y lógica.
 
@@ -158,7 +149,7 @@ ${tasks.map(t => `- ${t.name} (ID: ${t.id}): ${t.duration} min, Frecuencia: ${t.
 
 PERÍODO A PLANIFICAR:
 Desde: ${formattedStartDate}
-Hasta: ${format(addDays(new Date(startDate), limitedDays - 1), 'yyyy-MM-dd')} (${limitedDays} días en total)
+Hasta: ${formattedEndDate}
 
 REGLAS CRÍTICAS:
 1. BALANCE: El tiempo total semanal debe ser similar para todas las personas.
@@ -178,9 +169,8 @@ FORMATO DE RESPUESTA (JSON PURO):
 }
 
 IMPORTANTE: 
-- Genera tantas asignaciones como sea posible para cubrir el período.
-- Retorna ÚNICAMENTE el JSON. Sin introducciones ni explicaciones.
-- Si el periodo es muy largo, prioriza completar los primeros días perfectamente.`;
+- Genera todas las asignaciones necesarias para cubrir el período solicitado.
+- Retorna ÚNICAMENTE el JSON. Sin introducciones ni explicaciones.`;
     }
 }
 
