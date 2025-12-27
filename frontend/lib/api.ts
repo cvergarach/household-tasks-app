@@ -108,14 +108,14 @@ class APIClient {
     return res.json();
   }
 
-  async redistributeAll(startDate: string, endDate: string) {
+  async redistributeAll(startDate: string, endDate: string, model?: string) {
     console.log(`📡 [API] Llamando a ${API_URL}/api/ai/redistribute`);
-    console.log('📤 [API] Datos:', { startDate, endDate });
+    console.log('📤 [API] Datos:', { startDate, endDate, model });
 
     const res = await fetch(`${API_URL}/api/ai/redistribute`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ startDate, endDate })
+      body: JSON.stringify({ startDate, endDate, model })
     });
 
     console.log('📥 [API] Status:', res.status, res.statusText);
@@ -129,6 +129,11 @@ class APIClient {
     const data = await res.json();
     console.log('✅ [API] Respuesta exitosa:', data);
     return data;
+  }
+
+  async getAvailableModels() {
+    const res = await fetch(`${API_URL}/api/ai/models`);
+    return res.json();
   }
 
   async analyzeBalance(startDate?: string, endDate?: string) {

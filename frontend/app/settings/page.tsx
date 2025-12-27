@@ -22,9 +22,14 @@ export default function SettingsPage() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [emailConfigStatus, setEmailConfigStatus] = useState<{ configured: boolean; source?: string }>({ configured: false });
 
+  // AI Model states
+  const [availableModels, setAvailableModels] = useState<any>(null);
+  const [selectedModel, setSelectedModel] = useState<string>('gemini-2.5-flash');
+
   useEffect(() => {
     loadData();
     loadEmailConfig();
+    loadModels();
   }, []);
 
   const loadData = async () => {

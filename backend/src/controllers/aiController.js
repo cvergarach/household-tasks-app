@@ -1,8 +1,10 @@
 const geminiService = require('../services/geminiService');
+const claudeService = require('../services/claudeService');
 const distributionService = require('../services/distributionService');
 const Person = require('../models/Person');
 const Task = require('../models/Task');
 const Assignment = require('../models/Assignment');
+const { getModelById, getAllModels, getModelsByProvider } = require('../config/aiModels');
 
 exports.distribute = async (req, res) => {
   try {
@@ -60,7 +62,7 @@ exports.redistribute = async (req, res) => {
     console.log('🚀 [REDISTRIBUTE] Iniciando redistribución...');
     console.log('📥 [REDISTRIBUTE] Body recibido:', req.body);
 
-    const { startDate, endDate } = req.body;
+    const { startDate, endDate, model: modelId } = req.body;
 
     if (!startDate || !endDate) {
       console.log('❌ [REDISTRIBUTE] Faltan fechas');
@@ -70,6 +72,11 @@ exports.redistribute = async (req, res) => {
     }
 
     console.log(`📅 [REDISTRIBUTE] Período: ${startDate} a ${endDate}`);
+    console.log(`🤖 [REDISTRIBUTE] Modelo seleccionado: ${modelId || 'default (gemini-2.5-flash)'}`);
+
+    // Get model configuration
+    const modelConfig = modelId ? getModelById(modelId) : getModelById('gemini-2.5-flash');
+    console.log(`📋 [REDISTRIBUTE] Usando: ${modelConfig.name} (${modelConfig.provider})`);
 
     // Limpiar todas las asignaciones
     console.log('🧹 [REDISTRIBUTE] Limpiando asignaciones existentes...');
@@ -95,13 +102,27 @@ exports.redistribute = async (req, res) => {
       return res.status(400).json({ error: 'No hay tareas activas' });
     }
 
-    console.log('🤖 [REDISTRIBUTE] Llamando a Gemini para distribución...');
-    const distribution = await geminiService.distributeTasks(
-      startDate,
-      endDate,
-      persons,
-      tasks
-    );
+    // Route to appropriate service based on provider
+    let distribution;
+    if (modelConfig.provider === 'anthropic') {
+      console.log('🤖 [REDISTRIBUTE] Llamando a Claude...');
+      distribution = await claudeService.distributeTasks(
+        startDate,
+        endDate,
+        persons,
+        tasks,
+        modelConfig.apiModel
+      );
+    } else {
+      console.log('🤖 [REDISTRIBUTE] Llamando a Gemini...');
+      distribution = await geminiService.distributeTasks(
+        startDate,
+        endDate,
+        persons,
+        tasks,
+        modelConfig.apiModel
+      );
+    }
     console.log(`✅ [REDISTRIBUTE] Distribución generada con ${distribution.assignments?.length || 0} asignaciones`);
 
     console.log('💾 [REDISTRIBUTE] Guardando asignaciones en BD...');
@@ -115,6 +136,8 @@ exports.redistribute = async (req, res) => {
     console.log('🎉 [REDISTRIBUTE] Redistribución completada exitosamente');
     res.json({
       message: 'Redistribución completada',
+      model: modelConfig.name,
+      provider: modelConfig.provider,
       distribution,
       assignmentsCreated: assignments.length
     });
@@ -201,6 +224,20 @@ exports.getStatistics = async (req, res) => {
     res.json(balance);
   } catch (error) {
     console.error('Error obteniendo estadísticas:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Get available AI models
+exports.getModels = async (req, res) => {
+  try {
+    const models = getModelsByProvider();
+    res.json({
+      models: getAllModels(),
+      grouped: models
+    });
+  } catch (error) {
+    console.error('Error obteniendo modelos:', error);
     res.status(500).json({ error: error.message });
   }
 };

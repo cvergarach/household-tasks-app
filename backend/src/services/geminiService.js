@@ -1,25 +1,29 @@
-const { model } = require('../config/gemini');
 const { addDays, format, eachDayOfInterval } = require('date-fns');
 
 class GeminiService {
   /**
    * Distribuir tareas usando IA de Gemini
    */
-  async distributeTasks(startDate, endDate, persons, tasks) {
+  async distributeTasks(startDate, endDate, persons, tasks, modelId = 'gemini-2.5-flash') {
     const maxRetries = 3;
     let lastError;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        console.log(`🤖 Intento ${attempt}/${maxRetries} de distribución con Gemini...`);
+        console.log(`🤖 [GEMINI] Intento ${attempt}/${maxRetries} con modelo ${modelId}...`);
 
         const prompt = this.buildDistributionPrompt(startDate, endDate, persons, tasks);
+
+        // Get the appropriate model
+        const { GoogleGenerativeAI } = require('@google/generative-ai');
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'dummy-key');
+        const model = genAI.getGenerativeModel({ model: modelId });
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = response.text();
 
-        console.log(`📝 Respuesta de Gemini (primeros 200 chars): ${text.substring(0, 200)}...`);
+        console.log(`📝 [GEMINI] Respuesta (primeros 200 chars): ${text.substring(0, 200)}...`);
 
         // Extraer JSON del texto de forma más robusta
         let jsonText = text.trim();

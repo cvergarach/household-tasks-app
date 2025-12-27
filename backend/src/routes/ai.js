@@ -7,5 +7,6 @@ router.post('/redistribute', aiController.redistribute);
 router.post('/optimize', aiController.optimize);
 router.get('/analyze-balance', aiController.analyzeBalance);
 router.get('/statistics', aiController.getStatistics);
+router.get('/models', aiController.getModels);
 
 module.exports = router;
